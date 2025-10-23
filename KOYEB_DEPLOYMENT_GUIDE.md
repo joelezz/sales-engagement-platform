@@ -231,28 +231,43 @@ koyeb logs sales-engagement-backend --follow
 
 ### Common Issues
 
-1. **Database Connection Failed**
+1. **"No command to run your application" Error**
+   ```bash
+   # This is fixed by the Procfile in the repository
+   # If you still see this error:
+   # 1. Ensure Procfile exists in your repository
+   # 2. Check that the run command is set in Koyeb dashboard
+   # 3. Use: uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1
+   ```
+
+2. **Database Connection Failed**
    ```bash
    # Check DATABASE_URL format
    # Should be: postgresql://user:password@host:port/database
    ```
 
-2. **Redis Connection Failed**
+3. **Redis Connection Failed**
    ```bash
    # Check REDIS_URL format
    # Should be: redis://user:password@host:port/0
    ```
 
-3. **CORS Errors**
+4. **CORS Errors**
    ```bash
    # Update CORS_ORIGINS environment variable
    # Include your frontend domain
    ```
 
-4. **Health Check Failing**
+5. **Health Check Failing**
    ```bash
    # Check if /health endpoint is accessible
    curl https://your-app.koyeb.app/health
+   ```
+
+6. **Port Issues**
+   ```bash
+   # Koyeb automatically sets the PORT environment variable
+   # The application should use $PORT, not hardcoded 8000
    ```
 
 ### Support
