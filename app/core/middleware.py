@@ -27,7 +27,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
         
         # Add CORS headers manually
         origin = request.headers.get("origin")
-        if origin and origin in settings.cors_origins:
+        if origin and origin in settings.cors_origins_list:
             response.headers["Access-Control-Allow-Origin"] = origin
             response.headers["Access-Control-Allow-Credentials"] = "true"
             response.headers["Vary"] = "Origin"
@@ -208,7 +208,7 @@ def setup_cors_middleware(app):
     
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.cors_origins,
+        allow_origins=settings.cors_origins_list,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

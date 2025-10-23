@@ -1,0 +1,158 @@
+name: Deploy to Koyeb
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+env:
+  KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: testpassword
+          POSTGRES_USER: testuser
+          POSTGRES_DB: test_sales_engagement
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+    
+    - name: Run tests
+      env:
+        DATABASE_URL: postgresql+asyncpg://testuser:testpassword@localhost:5432/test_sales_engagement
+        REDIS_URL: redis://localhost:6379/0
+        SECRET_KEY: test-secret-key-for-github-actions-minimum-32-chars
+        JWT_SECRET_KEY: test-jwt-secret-key-for-github-actions-minimum-32-chars
+      run: |
+        # Run basic health check tests
+        python -c "
+        import asyncio
+        from app.main import app
+        from fastapi.testclient import TestClient
+        
+        client = TestClient(app)
+        response = client.get('/health')
+        assert response.status_code == 200
+        print('✅ Health check passed')
+        
+        # Test basic API endpoints
+        response = client.get('/docs')
+        assert response.status_code == 200
+        print('✅ API docs accessible')
+        
+        print('🎉 All tests passed!')
+        "
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Koyeb CLI
+      run: |
+        curl -fsSL https://cli.koyeb.com/install.sh | sh
+        sudo mv koyeb /usr/local/bin/
+    
+    - name: Deploy to Koyeb
+      env:
+        KOYEB_API_TOKEN: ${{ secrets.KOYEB_API_TOKEN }}
+      run: |
+        # Deploy backend service
+        koyeb service update sales-engagement-backend \
+          --git github.com/${{ github.repository }} \
+          --git-branch ${{ github.ref_name }} \
+          --docker-dockerfile Dockerfile.koyeb \
+          || koyeb service create sales-engagement-backend \
+             --app sales-engagement-platform \
+             --git github.com/${{ github.repository }} \
+             --git-branch ${{ github.ref_name }} \
+             --docker-dockerfile Dockerfile.koyeb \
+             --ports 8000:http \
+             --routes /:8000 \
+             --instance-type small \
+             --min-scale 1 \
+             --max-scale 3 \
+             --health-check-path /health
+    
+    - name: Wait for deployment
+      run: |
+        echo "⏳ Waiting for deployment to complete..."
+        sleep 60
+        
+        # Check deployment status
+        koyeb service get sales-engagement-backend
+    
+    - name: Verify deployment
+      run: |
+        # Get the service URL
+        SERVICE_URL=$(koyeb service get sales-engagement-backend --output json | jq -r '.public_domain')
+        
+        if [ "$SERVICE_URL" != "null" ]; then
+          echo "🚀 Service deployed at: https://$SERVICE_URL"
+          
+          # Test health endpoint
+          curl -f "https://$SERVICE_URL/health" || exit 1
+          echo "✅ Health check passed"
+          
+          # Test API docs
+          curl -f "https://$SERVICE_URL/docs" || exit 1
+          echo "✅ API docs accessible"
+          
+          echo "🎉 Deployment successful!"
+        else
+          echo "❌ Failed to get service URL"
+          exit 1
+        fi
+
+  notify:
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "🎉 Deployment to Koyeb successful!"
+          echo "📱 Your Sales Engagement Platform is now live!"
+        else
+          echo "❌ Deployment failed. Check the logs above."
+          exit 1
+        fi

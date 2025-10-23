@@ -46,7 +46,7 @@ def create_access_token(data: Dict[str, Any], expires_delta: Optional[timedelta]
         expire = datetime.utcnow() + timedelta(minutes=settings.access_token_expire_minutes)
     
     to_encode.update({"exp": expire, "type": "access"})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.effective_jwt_secret, algorithm=settings.algorithm)
     return encoded_jwt
 
 
@@ -55,14 +55,14 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=settings.refresh_token_expire_days)
     to_encode.update({"exp": expire, "type": "refresh"})
-    encoded_jwt = jwt.encode(to_encode, settings.secret_key, algorithm=settings.algorithm)
+    encoded_jwt = jwt.encode(to_encode, settings.effective_jwt_secret, algorithm=settings.algorithm)
     return encoded_jwt
 
 
 def decode_access_token(token: str) -> Dict[str, Any]:
     """Decode and validate JWT access token"""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.effective_jwt_secret, algorithms=[settings.algorithm])
         
         if payload.get("type") != "access":
             raise JWTError("Invalid token type")
@@ -75,7 +75,7 @@ def decode_access_token(token: str) -> Dict[str, Any]:
 def decode_refresh_token(token: str) -> Dict[str, Any]:
     """Decode and validate JWT refresh token"""
     try:
-        payload = jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+        payload = jwt.decode(token, settings.effective_jwt_secret, algorithms=[settings.algorithm])
         
         if payload.get("type") != "refresh":
             raise JWTError("Invalid token type")
