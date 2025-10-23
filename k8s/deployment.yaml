@@ -1,0 +1,180 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-engagement-api
+  namespace: sales-engagement
+  labels:
+    app: sales-engagement-api
+    version: v1.0.0
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: sales-engagement-api
+  template:
+    metadata:
+      labels:
+        app: sales-engagement-api
+        version: v1.0.0
+    spec:
+      containers:
+      - name: api
+        image: sales-engagement/api:1.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+          name: http
+        env:
+        - name: APP_NAME
+          valueFrom:
+            configMapKeyRef:
+              name: sales-engagement-config
+              key: APP_NAME
+        - name: DEBUG
+          valueFrom:
+            configMapKeyRef:
+              name: sales-engagement-config
+              key: DEBUG
+        - name: VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: sales-engagement-config
+              key: VERSION
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: REDIS_URL
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: SECRET_KEY
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: TWILIO_AUTH_TOKEN
+        - name: TWILIO_PHONE_NUMBER
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: TWILIO_PHONE_NUMBER
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: true
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      securityContext:
+        fsGroup: 1000
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sales-engagement-celery
+  namespace: sales-engagement
+  labels:
+    app: sales-engagement-celery
+    version: v1.0.0
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sales-engagement-celery
+  template:
+    metadata:
+      labels:
+        app: sales-engagement-celery
+        version: v1.0.0
+    spec:
+      containers:
+      - name: celery-worker
+        image: sales-engagement/api:1.0.0
+        command: ["celery", "-A", "app.core.celery", "worker", "--loglevel=info", "--concurrency=4"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: REDIS_URL
+        - name: CELERY_BROKER_URL
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: CELERY_BROKER_URL
+        - name: CELERY_RESULT_BACKEND
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: CELERY_RESULT_BACKEND
+        - name: TWILIO_ACCOUNT_SID
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: TWILIO_ACCOUNT_SID
+        - name: TWILIO_AUTH_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: sales-engagement-secrets
+              key: TWILIO_AUTH_TOKEN
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "250m"
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false

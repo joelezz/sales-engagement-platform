@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  # PostgreSQL tietokanta
+  postgres:
+    image: postgres:15
+    container_name: sales_postgres
+    environment:
+      POSTGRES_DB: sales_engagement
+      POSTGRES_USER: sales_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - sales_network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: sales_redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    ports:
+      - "6379:6379"
+    restart: unless-stopped
+    networks:
+      - sales_network
+
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: sales_backend
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://sales_user:${POSTGRES_PASSWORD}@postgres:5432/sales_engagement
+      - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_PHONE_NUMBER=${TWILIO_PHONE_NUMBER}
+      - BASE_URL=https://api.call.duoai.tech
+      - ALLOWED_ORIGINS=https://call.duoai.tech,https://api.call.duoai.tech
+      - DEBUG=false
+    ports:
+      - "8001:8001"
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+    networks:
+      - sales_network
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.prod
+      args:
+        - REACT_APP_API_URL=https://api.call.duoai.tech
+    container_name: sales_frontend
+    ports:
+      - "3000:80"
+    restart: unless-stopped
+    networks:
+      - sales_network
+
+volumes:
+  postgres_data:
+
+networks:
+  sales_network:
+    driver: bridge

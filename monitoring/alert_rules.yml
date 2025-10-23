@@ -1,0 +1,159 @@
+groups:
+  - name: sales_engagement_alerts
+    rules:
+      # API Performance Alerts
+      - alert: HighAPILatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 0.2
+        for: 2m
+        labels:
+          severity: warning
+          service: sales-engagement-api
+        annotations:
+          summary: "High API latency detected"
+          description: "95th percentile latency is {{ $value }}s, exceeding 200ms threshold"
+
+      - alert: HighErrorRate
+        expr: rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m]) > 0.01
+        for: 1m
+        labels:
+          severity: critical
+          service: sales-engagement-api
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }}, exceeding 1% threshold"
+
+      # Database Alerts
+      - alert: DatabaseConnectionsHigh
+        expr: pg_stat_database_numbackends / pg_settings_max_connections > 0.8
+        for: 2m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "Database connections approaching limit"
+          description: "Database connections at {{ $value | humanizePercentage }} of maximum"
+
+      - alert: DatabaseSlowQueries
+        expr: rate(pg_stat_database_tup_returned[5m]) / rate(pg_stat_database_tup_fetched[5m]) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: postgresql
+        annotations:
+          summary: "Database queries performing poorly"
+          description: "Query efficiency is {{ $value | humanizePercentage }}"
+
+      # Redis Alerts
+      - alert: RedisMemoryHigh
+        expr: redis_memory_used_bytes / redis_memory_max_bytes > 0.9
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "Redis memory usage high"
+          description: "Redis memory usage at {{ $value | humanizePercentage }}"
+
+      - alert: RedisConnectionsHigh
+        expr: redis_connected_clients > 100
+        for: 2m
+        labels:
+          severity: warning
+          service: redis
+        annotations:
+          summary: "High number of Redis connections"
+          description: "{{ $value }} Redis connections active"
+
+      # WebSocket Alerts
+      - alert: WebSocketConnectionsHigh
+        expr: websocket_connections_active > 1000
+        for: 2m
+        labels:
+          severity: warning
+          service: sales-engagement-api
+        annotations:
+          summary: "High number of WebSocket connections"
+          description: "{{ $value }} active WebSocket connections"
+
+      - alert: WebSocketNotificationLatency
+        expr: histogram_quantile(0.95, rate(websocket_notification_duration_seconds_bucket[5m])) > 0.5
+        for: 2m
+        labels:
+          severity: warning
+          service: sales-engagement-api
+        annotations:
+          summary: "High WebSocket notification latency"
+          description: "95th percentile notification latency is {{ $value }}s"
+
+      # System Resource Alerts
+      - alert: HighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value }}% on {{ $labels.instance }}"
+
+      - alert: DiskSpaceLow
+        expr: (1 - (node_filesystem_avail_bytes / node_filesystem_size_bytes)) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: system
+        annotations:
+          summary: "Low disk space"
+          description: "Disk usage is {{ $value }}% on {{ $labels.instance }}"
+
+      # Business Logic Alerts
+      - alert: FailedCallsHigh
+        expr: rate(voip_calls_total{status="failed"}[5m]) / rate(voip_calls_total[5m]) > 0.05
+        for: 2m
+        labels:
+          severity: warning
+          service: voip
+        annotations:
+          summary: "High VoIP call failure rate"
+          description: "Call failure rate is {{ $value | humanizePercentage }}"
+
+      - alert: TwilioWebhookFailures
+        expr: rate(twilio_webhook_errors_total[5m]) > 0.1
+        for: 1m
+        labels:
+          severity: critical
+          service: twilio-integration
+        annotations:
+          summary: "Twilio webhook failures detected"
+          description: "Twilio webhook error rate: {{ $value }} errors/second"
+
+      # Security Alerts
+      - alert: HighAuthenticationFailures
+        expr: rate(auth_failures_total[5m]) > 1
+        for: 2m
+        labels:
+          severity: warning
+          service: authentication
+        annotations:
+          summary: "High authentication failure rate"
+          description: "Authentication failures: {{ $value }} failures/second"
+
+      - alert: SuspiciousActivity
+        expr: rate(audit_log_entries_total{action=~"delete|export"}[5m]) > 0.5
+        for: 1m
+        labels:
+          severity: warning
+          service: security
+        annotations:
+          summary: "Suspicious activity detected"
+          description: "High rate of sensitive operations: {{ $value }} operations/second"

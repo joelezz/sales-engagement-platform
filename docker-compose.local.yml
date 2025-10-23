@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15
+    container_name: sales-engagement-postgres
+    environment:
+      POSTGRES_DB: sales_engagement
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sales-engagement-network
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: sales-engagement-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - sales-engagement-network
+
+  # Sales Engagement API
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sales-engagement-api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/sales_engagement
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=local-development-secret-key-12345678901234567890
+      - DEBUG=true
+      - TWILIO_ACCOUNT_SID=ACtest123456789
+      - TWILIO_AUTH_TOKEN=test_auth_token
+      - TWILIO_PHONE_NUMBER=+15551234567
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+      - ./alembic:/app/alembic
+      - ./alembic.ini:/app/alembic.ini
+    networks:
+      - sales-engagement-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Celery Worker
+  celery:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sales-engagement-celery
+    command: celery -A app.core.celery worker --loglevel=info --concurrency=2
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:password@postgres:5432/sales_engagement
+      - REDIS_URL=redis://redis:6379/0
+      - CELERY_BROKER_URL=redis://redis:6379/1
+      - CELERY_RESULT_BACKEND=redis://redis:6379/2
+      - SECRET_KEY=local-development-secret-key-12345678901234567890
+      - TWILIO_ACCOUNT_SID=ACtest123456789
+      - TWILIO_AUTH_TOKEN=test_auth_token
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./app:/app/app
+    networks:
+      - sales-engagement-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  sales-engagement-network:
+    driver: bridge
