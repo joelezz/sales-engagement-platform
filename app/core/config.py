@@ -40,7 +40,7 @@ class Settings(BaseSettings):
     twilio_webhook_url: Optional[str] = None
     
     # CORS
-    cors_origins: str = "http://localhost:3000,http://localhost:8001"
+    cors_origins: str = "http://localhost:3000,http://localhost:8001,https://clever-deonne-joelezz-fb67314e.koyeb.app"
     allowed_origins: Optional[str] = None  # Alternative CORS setting
     
     @property
