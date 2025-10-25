@@ -149,6 +149,17 @@ async def shutdown_event():
     await redis_client.disconnect()
 
 
+@app.get("/")
+async def root():
+    """Root endpoint - API information"""
+    return {
+        "message": "Sales Engagement Platform API",
+        "version": settings.version,
+        "docs": "/docs",
+        "health": "/health"
+    }
+
+
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
