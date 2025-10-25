@@ -20,12 +20,12 @@ This guide shows how to deploy the React frontend as a separate Koyeb service.
    - Click "Create Service"
    - Choose "GitHub" as source
    - Select your repository
-   - Set the source directory to `frontend/`
+   - **DO NOT** set a source directory (leave empty)
 
 3. **Configure Build Settings**
    - Build type: `Docker`
    - Dockerfile path: `frontend/Dockerfile`
-   - Build context: `frontend/`
+   - Build context: `.` (root directory)
 
 4. **Configure Service Settings**
    - Service name: `sales-engagement-frontend`
@@ -161,3 +161,58 @@ After successful deployment:
 2. Configure monitoring and alerts
 3. Set up CI/CD pipeline for automatic deployments
 4. Consider CDN for static assets (for global applications)
+## A
+lternative: Create Separate Frontend Repository
+
+If you continue having issues with the monorepo approach, you can create a separate repository for the frontend:
+
+### Steps:
+
+1. **Create New Repository**
+   ```bash
+   # Create new repository on GitHub: sales-engagement-frontend
+   ```
+
+2. **Copy Frontend Files**
+   ```bash
+   # Create new directory
+   mkdir ../sales-engagement-frontend
+   cd ../sales-engagement-frontend
+   
+   # Initialize git
+   git init
+   
+   # Copy frontend files (excluding node_modules)
+   cp -r ../sales-engagement-platform/frontend/* .
+   cp ../sales-engagement-platform/frontend/.* . 2>/dev/null || true
+   
+   # Remove monorepo-specific files
+   rm -f koyeb.toml
+   
+   # Update Dockerfile for standalone deployment
+   ```
+
+3. **Update Dockerfile for Standalone**
+   ```dockerfile
+   # Multi-stage build for React frontend
+   FROM node:18-alpine as build
+   
+   WORKDIR /app
+   COPY package*.json ./
+   RUN npm ci --only=production
+   COPY . .
+   RUN npm run build
+   
+   FROM nginx:alpine
+   COPY --from=build /app/build /usr/share/nginx/html
+   COPY nginx.conf /etc/nginx/conf.d/default.conf
+   EXPOSE 80
+   CMD ["nginx", "-g", "daemon off;"]
+   ```
+
+4. **Deploy to Koyeb**
+   - Use the new repository
+   - No need to specify subdirectories
+   - Standard Docker deployment
+
+This approach is simpler and avoids monorepo complexity.
