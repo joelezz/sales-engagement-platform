@@ -1,8 +1,11 @@
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from pydantic import ValidationError
 from sqlalchemy.exc import IntegrityError
 import logging
+import os
 
 from app.core.config import settings
 from app.core.middleware import (
@@ -149,16 +152,6 @@ async def shutdown_event():
     await redis_client.disconnect()
 
 
-@app.get("/")
-async def root():
-    """Root endpoint - API information"""
-    return {
-        "message": "Sales Engagement Platform API",
-        "version": settings.version,
-        "docs": "/docs",
-        "health": "/health"
-    }
-
 
 @app.get("/health")
 async def health_check():
@@ -182,6 +175,26 @@ async def get_metrics():
     )
 
 
+# Mount static files
+static_dir = os.path.join(os.path.dirname(__file__), "static")
+if os.path.exists(static_dir):
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
 # Include API routers
 from app.api.v1.api import api_router
 app.include_router(api_router, prefix="/api/v1")
+
+# Serve the frontend HTML for the root path
+@app.get("/", include_in_schema=False)
+async def serve_frontend():
+    """Serve the frontend application"""
+    static_file = os.path.join(os.path.dirname(__file__), "static", "index.html")
+    if os.path.exists(static_file):
+        return FileResponse(static_file)
+    else:
+        return {
+            "message": "Sales Engagement Platform API",
+            "version": settings.version,
+            "docs": "/docs",
+            "health": "/health"
+        }

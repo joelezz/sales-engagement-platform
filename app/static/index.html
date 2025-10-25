@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Engagement Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #1e293b;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            color: #2563eb;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            color: #64748b;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .card h2 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-size: 1.5rem;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #2563eb;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 500;
+            transition: background-color 0.2s;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+        
+        .btn:hover {
+            background-color: #1d4ed8;
+        }
+        
+        .btn-secondary {
+            background-color: #64748b;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #475569;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        
+        .feature {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .feature h3 {
+            color: #2563eb;
+            margin-bottom: 1rem;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .status.healthy {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+        
+        .api-info {
+            background-color: #f1f5f9;
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Sales Engagement Platform</h1>
+            <p>Enterprise-grade Sales Engagement Platform with VoIP, Email, SMS, and CRM capabilities</p>
+            <div style="margin-top: 1rem;">
+                <span class="status healthy" id="api-status">API Status: Checking...</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🚀 Welcome to Your Sales Engagement Platform</h2>
+            <p>Your backend API is successfully deployed and running. The frontend React application is currently being set up.</p>
+            
+            <div class="api-info">
+                <strong>API Endpoint:</strong> https://equal-correna-joelezz-d150d717.koyeb.app<br>
+                <strong>Documentation:</strong> <a href="/docs" target="_blank">Interactive API Docs</a><br>
+                <strong>Health Check:</strong> <a href="/health" target="_blank">System Health</a>
+            </div>
+
+            <div style="margin-top: 1.5rem;">
+                <a href="/docs" class="btn">📚 View API Documentation</a>
+                <a href="/health" class="btn btn-secondary">🔍 Check System Health</a>
+            </div>
+        </div>
+
+        <div class="grid">
+            <div class="feature">
+                <h3>🎯 Multi-tenant Architecture</h3>
+                <p>Complete data isolation per tenant with Row-Level Security for enterprise-grade data protection.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📞 VoIP Integration</h3>
+                <p>Twilio-powered calling with recording and comprehensive activity tracking.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>⚡ Real-time Notifications</h3>
+                <p>WebSocket-based instant updates for seamless user experience.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>👥 Contact Management</h3>
+                <p>Advanced search, timeline, and relationship tracking capabilities.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>📊 Activity Timeline</h3>
+                <p>Comprehensive interaction history across all communication channels.</p>
+            </div>
+            
+            <div class="feature">
+                <h3>🔒 Security & Compliance</h3>
+                <p>GDPR-compliant with comprehensive audit logging and security monitoring.</p>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🔧 Next Steps</h2>
+            <p>To access the full user interface:</p>
+            <ol style="margin: 1rem 0; padding-left: 2rem;">
+                <li>The React frontend is being configured for production deployment</li>
+                <li>You can test the API endpoints using the <a href="/docs">interactive documentation</a></li>
+                <li>All authentication and core features are available via the API</li>
+            </ol>
+            
+            <p style="margin-top: 1rem; color: #64748b;">
+                <strong>Developer Note:</strong> The frontend React application will be available shortly. 
+                In the meantime, you can use the API documentation to test all features.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Check API health status
+        async function checkApiHealth() {
+            try {
+                const response = await fetch('/health');
+                const data = await response.json();
+                const statusElement = document.getElementById('api-status');
+                
+                if (response.ok && data.status === 'healthy') {
+                    statusElement.textContent = `API Status: ${data.status.toUpperCase()} (v${data.version})`;
+                    statusElement.className = 'status healthy';
+                } else {
+                    statusElement.textContent = 'API Status: UNHEALTHY';
+                    statusElement.className = 'status error';
+                }
+            } catch (error) {
+                const statusElement = document.getElementById('api-status');
+                statusElement.textContent = 'API Status: CONNECTION ERROR';
+                statusElement.className = 'status error';
+            }
+        }
+
+        // Check status on page load
+        checkApiHealth();
+        
+        // Refresh status every 30 seconds
+        setInterval(checkApiHealth, 30000);
+    </script>
+</body>
+</html>
