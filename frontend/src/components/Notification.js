@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import './Notification.css';
+
 
 function Notification({ message, type = 'info', duration = 5000, onClose }) {
   const [isVisible, setIsVisible] = useState(true);

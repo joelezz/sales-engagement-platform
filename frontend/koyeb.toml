@@ -1,0 +1,19 @@
+[build]
+type = "docker"
+
+[deploy]
+type = "web"
+
+[[ports]]
+port = 80
+protocol = "http"
+
+[health_checks]
+grace_period_seconds = 30
+interval_seconds = 30
+restart_limit = 3
+timeout_seconds = 10
+
+[[health_checks.http]]
+port = 80
+path = "/"

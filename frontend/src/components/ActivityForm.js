@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { activitiesApi, contactsApi } from '../services/api';
-import './ActivityForm.css';
+
 
 function ActivityForm({ onClose, onActivityCreated, activity = null }) {
   const isEditing = !!activity;

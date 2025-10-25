@@ -6,7 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useNotification } from '../contexts/NotificationContext';
 import ContactForm from './ContactForm';
 import Header from './Header';
-import './ContactDetails.css';
+
 
 function ContactDetails() {
   const { id } = useParams();

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { activitiesApi } from '../services/api';
 import ActivityForm from './ActivityForm';
-import './ActivitiesTimeline.css';
+
 
 function ActivitiesTimeline() {
   const [showActivityForm, setShowActivityForm] = useState(false);

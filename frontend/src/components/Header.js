@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import './Header.css';
+
 
 function Header({ onLogout, searchQuery, onSearchChange }) {
   const location = useLocation();

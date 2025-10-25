@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { callsApi } from '../services/api';
 import { useNotification } from '../contexts/NotificationContext';
-import './ContactList.css';
+
 
 function ContactList({ contacts, onContactUpdate }) {
   const navigate = useNavigate();
