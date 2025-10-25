@@ -36,7 +36,7 @@ class TenantContextMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next: Callable):
         # Skip tenant context for public endpoints and OPTIONS requests
-        public_paths = ["/docs", "/redoc", "/openapi.json", "/health", "/api/v1/auth/login", "/api/v1/auth/register"]
+        public_paths = ["/docs", "/redoc", "/openapi.json", "/health", "/api/v1/auth/login", "/api/v1/auth/register", "/favicon.ico", "/metrics"]
         if any(request.url.path.startswith(path) for path in public_paths) or request.method == "OPTIONS":
             return await call_next(request)
         

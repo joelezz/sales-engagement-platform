@@ -4,7 +4,7 @@ export const apiClient = axios.create({
   baseURL: process.env.REACT_APP_API_URL || (
     process.env.NODE_ENV === 'production' 
       ? 'https://your-app.koyeb.app' 
-      : 'http://localhost:8001'
+      : 'http://localhost:8000'
   ),
   timeout: 10000,
   headers: {

@@ -75,16 +75,29 @@ class VoIPService:
             # Create webhook URL for call status updates
             webhook_url = f"{settings.base_url}/api/v1/webhooks/twilio/call-status"
             
-            # Initiate call with Twilio
-            twilio_call = self.client.calls.create(
-                to=contact.phone,
-                from_=from_num,
-                url=webhook_url,
-                status_callback=webhook_url,
-                status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
-                record=True,  # Enable call recording
-                timeout=30  # Ring for 30 seconds
-            )
+            # Check if we're in development environment (localhost)
+            is_development = "localhost" in settings.base_url or "127.0.0.1" in settings.base_url
+            
+            if is_development:
+                # In development, create a simple call without webhooks
+                twilio_call = self.client.calls.create(
+                    to=contact.phone,
+                    from_=from_num,
+                    # Use TwiML for simple call without webhooks
+                    twiml='<Response><Say>Hello, this is a test call from Sales Engagement Platform.</Say></Response>',
+                    timeout=30  # Ring for 30 seconds
+                )
+            else:
+                # In production, use full webhook integration
+                twilio_call = self.client.calls.create(
+                    to=contact.phone,
+                    from_=from_num,
+                    url=webhook_url,
+                    status_callback=webhook_url,
+                    status_callback_event=['initiated', 'ringing', 'answered', 'completed'],
+                    record=True,  # Enable call recording
+                    timeout=30  # Ring for 30 seconds
+                )
             
             # Create call record in database
             call = Call(

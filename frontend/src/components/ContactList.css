@@ -119,10 +119,34 @@
   color: var(--color-text-secondary);
 }
 
-.contact-action-btn:hover {
+.contact-action-btn:hover:not(:disabled):not(.disabled) {
   background: var(--color-primary);
   border-color: var(--color-primary);
   color: white;
+}
+
+.contact-action-btn:disabled,
+.contact-action-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-background-alt);
+  border-color: var(--color-border-light);
+  color: var(--color-text-muted);
+}
+
+/* Loading spinner for contact actions */
+.loading-spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid transparent;
+  border-top: 2px solid currentColor;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .contact-list-empty {

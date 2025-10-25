@@ -1,12 +1,67 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { callsApi } from '../services/api';
+import { useNotification } from '../contexts/NotificationContext';
 import './ContactList.css';
 
 function ContactList({ contacts, onContactUpdate }) {
   const navigate = useNavigate();
+  const { showSuccess, showError } = useNotification();
+  const [callingContactId, setCallingContactId] = useState(null);
 
   const handleContactClick = (contactId) => {
     navigate(`/contacts/${contactId}`);
+  };
+
+  const handleCall = async (contact, e) => {
+    e.stopPropagation();
+    
+    if (!contact.phone) {
+      showError('Kontaktilla ei ole puhelinnumeroa!');
+      return;
+    }
+
+    setCallingContactId(contact.id);
+    try {
+      const response = await callsApi.initiate({
+        contact_id: contact.id,
+        phone_number: contact.phone,
+        call_type: 'outbound'
+      });
+
+      if (response.data) {
+        showSuccess(`Soitto aloitettu numeroon ${contact.phone}`);
+        if (onContactUpdate) {
+          onContactUpdate();
+        }
+      }
+    } catch (error) {
+      console.error('Soiton aloitus epäonnistui:', error);
+      let errorMessage = 'Soiton aloitus epäonnistui. Tarkista Twilio-asetukset.';
+      
+      if (error.response?.data?.detail) {
+        errorMessage = error.response.data.detail;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = `Verkkovirhe: ${error.message}`;
+      }
+      
+      showError(errorMessage);
+    } finally {
+      setCallingContactId(null);
+    }
+  };
+
+  const handleEmail = (contact, e) => {
+    e.stopPropagation();
+    
+    if (!contact.email) {
+      showError('Kontaktilla ei ole sähköpostiosoitetta!');
+      return;
+    }
+
+    window.location.href = `mailto:${contact.email}`;
   };
 
   const formatPhone = (phone) => {
@@ -93,25 +148,25 @@ function ContactList({ contacts, onContactUpdate }) {
             
             <div className="contact-actions">
               <button
-                className="contact-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle call action
-                }}
-                title="Soita"
+                className={`contact-action-btn ${!contact.phone ? 'disabled' : ''}`}
+                onClick={(e) => handleCall(contact, e)}
+                disabled={!contact.phone || callingContactId === contact.id}
+                title={contact.phone ? "Soita" : "Ei puhelinnumeroa"}
               >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                </svg>
+                {callingContactId === contact.id ? (
+                  <div className="loading-spinner-small"></div>
+                ) : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                  </svg>
+                )}
               </button>
               
               <button
-                className="contact-action-btn"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  // Handle email action
-                }}
-                title="Lähetä sähköposti"
+                className={`contact-action-btn ${!contact.email ? 'disabled' : ''}`}
+                onClick={(e) => handleEmail(contact, e)}
+                disabled={!contact.email}
+                title={contact.email ? "Lähetä sähköposti" : "Ei sähköpostiosoitetta"}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>

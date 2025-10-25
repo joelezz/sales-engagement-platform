@@ -2,14 +2,20 @@ import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { contactsApi, activitiesApi, callsApi } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
+import { useNotification } from '../contexts/NotificationContext';
 import ContactForm from './ContactForm';
+import Header from './Header';
 import './ContactDetails.css';
 
 function ContactDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { showSuccess, showError } = useNotification();
   const [showEditForm, setShowEditForm] = useState(false);
   const [isCallInProgress, setIsCallInProgress] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const { data: contact, isLoading: contactLoading, refetch: refetchContact } = useQuery({
     queryKey: ['contact', id],
@@ -31,7 +37,7 @@ function ContactDetails() {
 
   const handleCall = async () => {
     if (!contactData.phone) {
-      alert('Kontaktilla ei ole puhelinnumeroa!');
+      showError('Kontaktilla ei ole puhelinnumeroa!');
       return;
     }
 
@@ -44,7 +50,7 @@ function ContactDetails() {
       });
 
       if (response.data) {
-        alert(`Soitto aloitettu numeroon ${contactData.phone}. Puhelu ID: ${response.data.id}`);
+        showSuccess(`Soitto aloitettu numeroon ${contactData.phone}`);
         // Päivitä aktiviteetit kun puhelu on aloitettu
         setTimeout(() => {
           window.location.reload(); // Yksinkertainen tapa päivittää aktiviteetit
@@ -62,7 +68,7 @@ function ContactDetails() {
         errorMessage = `Verkkovirhe: ${error.message}`;
       }
       
-      alert(errorMessage);
+      showError(errorMessage);
     } finally {
       setIsCallInProgress(false);
     }
@@ -139,17 +145,26 @@ function ContactDetails() {
 
   return (
     <div className="contact-details">
+      <Header 
+        onLogout={logout}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+      
       <div className="container">
         <div className="contact-details-header">
-          <button 
-            className="back-button"
-            onClick={() => navigate('/dashboard')}
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="15,18 9,12 15,6"></polyline>
-            </svg>
-            Takaisin
-          </button>
+          <div className="breadcrumb">
+            <button 
+              className="breadcrumb-link"
+              onClick={() => navigate('/dashboard')}
+            >
+              Kontaktit
+            </button>
+            <span className="breadcrumb-separator">/</span>
+            <span className="breadcrumb-current">
+              {contactData ? `${contactData.firstname} ${contactData.lastname}` : 'Ladataan...'}
+            </span>
+          </div>
           
           <div className="contact-details-actions">
             <button 
